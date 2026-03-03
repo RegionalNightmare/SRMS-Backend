@@ -18,7 +18,10 @@ const { errorHandler } = require("./middleware/errorMiddleware");
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'https://lustrous-buttercream-5f42c9.netlify.app',  // Your Netlify URL
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
