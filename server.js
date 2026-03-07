@@ -19,7 +19,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'https://lustrous-buttercream-5f42c9.netlify.app',  // Your Netlify URL
+  origin: 'https://srms-angular-au82tople-regionalnightmares-projects.vercel.app',  // Your Netlify URL
   credentials: true
 }));
 app.use(express.json());
