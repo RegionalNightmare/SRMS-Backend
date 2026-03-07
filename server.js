@@ -19,7 +19,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'srms-angular.vercel.app',  // Your Netlify URL
+  origin: 'https://srms-angular.vercel.app/',  // Your Netlify URL
   credentials: true
 }));
 app.use(express.json());
