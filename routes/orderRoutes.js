@@ -13,9 +13,8 @@ async function calculateTotalAndValidateItems(items) {
   }
 
   const ids = items.map((it) => it.menuItemId);
-
-  // Build placeholders like "?,?,?"
   const placeholders = ids.map(() => "?").join(",");
+
   const [rows] = await pool.execute(
     `SELECT id, price, available FROM menu_items WHERE id IN (${placeholders})`,
     ids
@@ -25,27 +24,23 @@ async function calculateTotalAndValidateItems(items) {
     throw new Error("One or more menu items do not exist");
   }
 
-  let total = 0;
   const priceMap = new Map();
-  rows.forEach((row) => {
+  for (const row of rows) {
     if (!row.available) {
       throw new Error(`Menu item with ID ${row.id} is not available`);
     }
     priceMap.set(row.id, Number(row.price));
-  });
+  }
 
-  items.forEach((it) => {
+  let total = 0;
+  for (const it of items) {
     const price = priceMap.get(it.menuItemId);
-    if (!price) {
-      throw new Error(`Menu item with ID ${it.menuItemId} not found`);
-    }
     const qty = Number(it.quantity) || 1;
     total += price * qty;
-  });
+  }
 
-  return total;
+  return { total, priceMap };
 }
-
 /**
  * POST /api/orders
  * Create a new order for the logged-in user
@@ -69,7 +64,7 @@ router.post("/", protect, async (req, res, next) => {
       return res.status(400).json({ message: "Delivery address required" });
     }
 
-    const totalPrice = await calculateTotalAndValidateItems(items);
+   const { total: totalPrice, priceMap } = await calculateTotalAndValidateItems(items);
 
     // Start transaction
     await connection.beginTransaction();
@@ -85,12 +80,23 @@ router.post("/", protect, async (req, res, next) => {
 
     // Insert order_items
     for (const it of items) {
-      await connection.execute(
-        `INSERT INTO order_items (order_id, menu_item_id, quantity)
-         VALUES (?, ?, ?)`,
-        [orderId, it.menuItemId, it.quantity || 1]
-      );
-    }
+  const qty = Number(it.quantity) || 1;
+  const priceEach = priceMap.get(it.menuItemId);
+
+  await connection.execute(
+    `INSERT INTO order_items (order_id, menu_item_id, quantity, price_each)
+     VALUES (?, ?, ?, ?)`,
+    [orderId, it.menuItemId, qty, priceEach]
+  );
+}
+
+const merged = new Map();
+for (const it of items) {
+  const id = it.menuItemId;
+  const qty = Number(it.quantity) || 1;
+  merged.set(id, (merged.get(id) || 0) + qty);
+}
+const normalizedItems = [...merged.entries()].map(([menuItemId, quantity]) => ({ menuItemId, quantity }));
 
     await connection.commit();
 
