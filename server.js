@@ -19,7 +19,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'https://srms-angular-au82tople-regionalnightmares-projects.vercel.app',  // Your Netlify URL
+  origin: 'srms-angular.vercel.app',  // Your Netlify URL
   credentials: true
 }));
 app.use(express.json());
