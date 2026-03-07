@@ -50,7 +50,7 @@ router.post(
   upload.single("image"),
   async (req, res, next) => {
     try {
-      const { name, category, price, description } = req.body;
+      const { name, category, price, description, dietary_tags, available } = req.body;
 
       if (!name || !category || !price) {
         return res
@@ -63,21 +63,30 @@ router.post(
         : null;
 
       const [result] = await pool.execute(
-        `INSERT INTO menu_items
-         (name, category, description, price, available, image_url)
-         VALUES (?, ?, ?, ?, 1, ?)`,
-        [name, category, description || null, price, imageUrl]
-      );
+  `INSERT INTO menu_items
+   (name, category, description, price, available, dietary_tags, image_url)
+   VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  [
+    name,
+    category,
+    description || null,
+    price,
+    available == 0 ? 0 : 1,
+    dietary_tags || null,
+    imageUrl
+  ]
+);
 
       res.status(201).json({
-        id: result.insertId,
-        name,
-        category,
-        description,
-        price,
-        available: 1,
-        image_url: imageUrl,
-      });
+  id: result.insertId,
+  name,
+  category,
+  description,
+  price,
+  available: available == 0 ? 0 : 1,
+  dietary_tags: dietary_tags || null,
+  image_url: imageUrl,
+});
     } catch (err) {
       next(err);
     }
